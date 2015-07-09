@@ -34,7 +34,8 @@ class ArtifactUploader(config: S3ConfigManager, s3: S3) extends BuildServerAdapt
   }
 
   def getAllFiles(runningBuild: SRunningBuild): Seq[(String,File)] = {
-    if (!runningBuild.isArtifactsExists) {
+    if (!runningBuild.isArtifactsExists || !runningBuild.getFailureReasons.isEmpty()) {
+      runningBuild.addBuildMessage(normalMessage("No artifacts found or build has failed. Nothing will be uploaded to S3."))
       Nil
     } else {
       ArtifactUploader.getChildren(runningBuild.getArtifactsDirectory)
@@ -57,10 +58,9 @@ object ArtifactUploader {
           if (child.isDirectory) {
             getChildren(child, paths, newPath + File.separator)
           } else {
-            Seq((newPath, child))
+            Seq((child.getName, child))
           }
         }
     }
   }
-
 }
